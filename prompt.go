@@ -147,7 +147,7 @@ func (p *Prompt) Run() (string, error) {
 	rl.Write([]byte(hideCursor))
 	sb := screenbuf.New(rl)
 
-	validFn := func(x string) error {
+	validFn := func(x string, c bool) error {
 		return nil
 	}
 	if p.Validate != nil {
@@ -164,7 +164,7 @@ func (p *Prompt) Run() (string, error) {
 
 	listen := func(input []rune, pos int, key rune) ([]rune, int, bool) {
 		_, _, keepOn := cur.Listen(input, pos, key)
-		err := validFn(cur.Get())
+		err := validFn(cur.Get(), false)
 		var prompt []byte
 
 		if err != nil {
@@ -197,7 +197,7 @@ func (p *Prompt) Run() (string, error) {
 
 	for {
 		_, err = rl.Readline()
-		inputErr = validFn(cur.Get())
+		inputErr = validFn(cur.Get(), true)
 		if inputErr == nil {
 			break
 		}
