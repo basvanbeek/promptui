@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"text/tabwriter"
 	"text/template"
 
@@ -28,6 +29,9 @@ type Select struct {
 	// The value for Label can be a simple string or a struct that will need to be accessed by dot notation
 	// inside the templates. For example, `{{ .Name }}` will display the name property of a struct.
 	Label interface{}
+
+	// Default Item Index.
+	DefaultIndex int
 
 	// Items are the items to display inside the list. It expect a slice of any kind of values, including strings.
 	//
@@ -146,6 +150,9 @@ type SelectTemplates struct {
 	// the IconInitial.
 	Label string
 
+	// Default Item Index.
+	DefaultIndex int
+
 	// Active is a text/template for when an item is currently active within the list.
 	Active string
 
@@ -187,11 +194,45 @@ type SelectTemplates struct {
 // SearchPrompt is the prompt displayed in search mode.
 var SearchPrompt = "Search: "
 
+func defaultValue(s *Select) bool {
+	itemsValue := reflect.ValueOf(s.Items)
+	if itemsValue.Kind() == reflect.Slice {
+		if s.DefaultIndex >= 0 && s.DefaultIndex < itemsValue.Len() {
+			var b []interface{}
+			b = append(b, itemsValue.Index(s.DefaultIndex))
+			for i := 0; i < itemsValue.Len(); i++ {
+				if i != (s.DefaultIndex) {
+					b = append(b, itemsValue.Index(i))
+				}
+			}
+			s.Items = b
+			return true
+		}
+	}
+	return false
+}
+
+func defaultValueSelectWithAdd(s *SelectWithAdd) bool {
+	if s.DefaultIndex >= 0 && s.DefaultIndex < len(s.Items) {
+		var b []string
+		b = append(b, s.Items[s.DefaultIndex])
+		for i, v := range s.Items {
+			if i != (s.DefaultIndex) {
+				b = append(b, v)
+			}
+		}
+		s.Items = b
+		return true
+	}
+	return false
+}
+
 // Run executes the select list. It displays the label and the list of items, asking the user to chose any
 // value within to list. Run will keep the prompt alive until it has been canceled from
 // the command prompt or it has received a valid value. It will return the value and an error if any
 // occurred during the select's execution.
 func (s *Select) Run() (int, string, error) {
+	defaultValue(s)
 	return s.RunCursorAt(s.CursorPos, 0)
 }
 
@@ -498,6 +539,9 @@ type SelectWithAdd struct {
 	// appended automatically to the label so it does not need to be added.
 	Label string
 
+	// Default Item Index.
+	DefaultIndex int
+
 	// Items are the items to display inside the list. Each item will be listed individually with the
 	// AddLabel as the first item of the list.
 	Items []string
@@ -529,6 +573,8 @@ type SelectWithAdd struct {
 // Otherwise, it will return the index and the value of the selected item. In any case, if an error is triggered, it
 // will also return the error as its third return value.
 func (sa *SelectWithAdd) Run() (int, string, error) {
+	defaultValueSelectWithAdd(sa)
+
 	if len(sa.Items) > 0 {
 		newItems := append([]string{sa.AddLabel}, sa.Items...)
 
@@ -538,13 +584,14 @@ func (sa *SelectWithAdd) Run() (int, string, error) {
 		}
 
 		s := Select{
-			Label:     sa.Label,
-			Items:     newItems,
-			IsVimMode: sa.IsVimMode,
-			HideHelp:  sa.HideHelp,
-			Size:      5,
-			list:      list,
-			Pointer:   sa.Pointer,
+			Label:        sa.Label,
+			Items:        newItems,
+			IsVimMode:    sa.IsVimMode,
+			HideHelp:     sa.HideHelp,
+			DefaultIndex: sa.DefaultIndex,
+			Size:         5,
+			list:         list,
+			Pointer:      sa.Pointer,
 		}
 		s.setKeys()
 
