@@ -233,7 +233,7 @@ func defaultValueSelectWithAdd(s *SelectWithAdd) bool {
 // occurred during the select's execution.
 func (s *Select) Run() (int, string, error) {
 	defaultValue(s)
-	return s.RunCursorAt(s.CursorPos, 1)
+	return s.RunCursorAt(s.CursorPos, 0)
 }
 
 // RunCursorAt executes the select list, initializing the cursor to the given
