@@ -23,5 +23,6 @@ var ErrInterrupt = errors.New("^C")
 var ErrAbort = errors.New("")
 
 // ValidateFunc is a placeholder type for any validation functions that validates a given input. It should return
-// a ValidationError if the input is not valid.
-type ValidateFunc func(string) error
+// a ValidationError if the input is not valid. If you have a potentially expensive validation function, you can
+// use the complete parameter to only run the validation function when the user has finished typing.
+type ValidateFunc func(val string, complete bool) error
